@@ -62,17 +62,18 @@ env.close()
 
 env = gym.make("MountainCar-v0", render_mode = "human")
 agent.epsilon = 0
-obs, info = env.reset()
 
-done = False
-# play one episode
-while not done:
-    action = agent.get_action(obs) # epsilon-greedy
-    next_obs, reward, terminated, truncated, info = env.step(action) 
-    
-    # update if the environment is done and the current obs
-    done = terminated or truncated
-    obs = next_obs
+for episode in range(5):
+    obs, info = env.reset()
+    done = False
+    # play one episode
+    while not done:
+        action = agent.get_action(obs) # epsilon-greedy
+        next_obs, reward, terminated, truncated, info = env.step(action) 
+        
+        # update if the environment is done and the current obs
+        done = terminated or truncated
+        obs = next_obs
 
 env.close()
 
