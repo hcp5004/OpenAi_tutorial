@@ -43,17 +43,21 @@ class mountaincart:
         else:
             x = float(obs[0])
             xdot = float(obs[1])
-            obs_x_1 = np.zeros(self.w.shape) 
-            obs_x_1[tilecoding.tiles(self.iht, 8, [8*x/(0.5+1.2), 8*xdot/(0.07 + 0.07)] , [1])] = 1
-
             obs_x_2 = np.zeros(self.w.shape) 
-            obs_x_2[tilecoding.tiles(self.iht, 8, [8*x/(0.5+1.2), 8*xdot/(0.07 + 0.07)] , [-1])] = 1
+            obs_x_2[tilecoding.tiles(self.iht, 8, [8*x/(0.6+1.2), 8*xdot/(0.07 + 0.07)] , [2])] = 1
 
+            obs_x_1 = np.zeros(self.w.shape) 
+            obs_x_1[tilecoding.tiles(self.iht, 8, [8*x/(0.6+1.2), 8*xdot/(0.07 + 0.07)] , [1])] = 1
 
+            obs_x_0 = np.zeros(self.w.shape) 
+            obs_x_0[tilecoding.tiles(self.iht, 8, [8*x/(0.6+1.2), 8*xdot/(0.07 + 0.07)] , [0])] = 1
+
+            q_value_0 = self.w.T@obs_x_0
             q_value_1 = self.w.T@obs_x_1
             q_value_2 = self.w.T@obs_x_2
 
-        return np.array([1 if q_value_1> q_value_2 else -1])
+        #return np.array([2 if q_value_1> q_value_2 else 0])
+        return np.argmax([q_value_0,q_value_1,q_value_2])
             #return float(np.argmax(self.q_values[obs]))
     
     def update(
@@ -63,11 +67,15 @@ class mountaincart:
         reward,
         terminated: bool,
         next_obs,
+        next_action
     ):
         """Updates the Q-value of an action."""
         #future_q_value = (not terminated) * np.max(self.q_values[next_obs])
         x = float(obs[0])
         xdot = float(obs[1])
+
+        next_x = float(next_obs[0])
+        next_xdot = float(next_obs[1])
         
         '''
         from state to feature
@@ -75,8 +83,8 @@ class mountaincart:
         obs_x = np.zeros(self.w.shape) 
         next_obs_x = np.zeros(self.w.shape)
 
-        obs_x[tilecoding.tiles(self.iht, 8, [8*x/(0.5+1.2), 8*xdot/(0.07 + 0.07)] ,action.tolist() )] = 1
-        next_obs_x[tilecoding.tiles(self.iht, 8, [8, 8*x/(0.5+1.2), 8*xdot/(0.07 + 0.07)] ,action.tolist())] = 1
+        obs_x[tilecoding.tiles(self.iht, 8, [8*x/(0.6+1.2), 8*xdot/(0.07 + 0.07)], [action] )] = 1
+        next_obs_x[tilecoding.tiles(self.iht, 8, [8*next_x/(0.6+1.2), 8*next_xdot/(0.07 + 0.07)], [next_action])] = 1
 
         q_value = self.w.T@obs_x
         future_q_value = (not terminated) * self.w.T@next_obs_x
@@ -84,7 +92,7 @@ class mountaincart:
 
         temporal_difference = (
             #reward + self.discount_factor * future_q_value - self.q_values[obs][action]
-            reward + self.discount_factor * future_q_value - q_value
+            reward + (self.discount_factor * future_q_value) - q_value
         )
 
         gradient = (
